@@ -10,8 +10,10 @@ class Fabric:
         self.height = height
         self.field = [0] * width * height
 
-    def cut_one(self, x, y):
-        self.field[y * self.width + x] += 1
+    def cut(self, cut):
+        for x in range(cut.left, cut.right):
+            for y in range(cut.top, cut.bottom):
+                self.field[y * self.width + x] += 1
 
     def overlap_surf(self):
         total = 0
@@ -27,33 +29,32 @@ class Cut:
         self.id = int(m.group(1))
         self.left = int(m.group(2))
         self.top = int(m.group(3))
-        self.width = int(m.group(4))
-        self.height = int(m.group(5))
+        width = int(m.group(4))
+        height = int(m.group(5))
+        self.bottom = self.top + height
+        self.right = self.left + width
 
-    def cut(self, fabric):
-        for x in range(self.left, self.left + self.width):
-            for y in range(self.top, self.top + self.height):
-                fabric.cut_one(x, y)
-
-    def has_overlap(self, cut):
+    def overlaps(self, cut):
         return (
-            self.left < cut.left + cut.width
-            and self.left + self.width > cut.left
-            and self.top < cut.top + cut.height
-            and self.top + self.height > cut.top
+            self.left < cut.right
+            and self.right > cut.left
+            and self.top < cut.bottom
+            and self.bottom > cut.top
         )
+
+    def __equals__(self, cut):
+        return self.id == cut.id
 
 
 with open("3.txt") as file:
     fabric = Fabric(1000, 1000)
     for line in file:
-        c = Cut(line)
-        c.cut(fabric)
+        fabric.cut(Cut(line))
     print(fabric.overlap_surf())
 
 with open("3.txt") as file:
     cuts = [Cut(line) for line in file]
     for cut in cuts:
-        if not any(cut.has_overlap(c) and cut.id != c.id for c in cuts):
+        if not any(cut.overlaps(c) and cut != c for c in cuts):
             print(cut.id)
             break
