@@ -16,6 +16,6 @@ with open("1.txt") as f:
         for c in changes:
             seen.add(total)
             total += c
-            if total in seen: break
+            if total in seen:
+                break
     print(total)
-
