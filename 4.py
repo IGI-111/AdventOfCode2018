@@ -5,6 +5,7 @@ from enum import Enum
 import re
 from datetime import datetime
 
+
 class Event:
     SHIFT = 1
     SLEEP = 2
@@ -12,7 +13,7 @@ class Event:
 
     def __init__(self, line):
         m = re.search("\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] (.*)", line)
-        self.date = datetime.strptime(m.group(1), '%Y-%m-%d %H:%M')
+        self.date = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M")
         message = m.group(2)
 
         if message == "wakes up":
@@ -25,9 +26,31 @@ class Event:
             self.guard = int(m.group(1))
 
 
-with open("4.txt") as file:
-    events = sorted([Event(line) for line in file], key=lambda e: e.date)
+def strategy_1(guard_tally):
+    best_guard = None
+    best_guard_total = None
+    best_minute = None
+    for (guard, minutes) in guard_tally.items():
+        if best_guard_total == None or sum(minutes) > best_guard_total:
+            best_guard = guard
+            best_guard_total = sum(minutes)
+            best_minute = minutes.index(max(minutes))
+    return best_guard * best_minute
 
+
+def strategy_2(guard_tally):
+    best_guard = None
+    best_minute = None
+    best_minute_total = None
+    for (guard, minutes) in guard_tally.items():
+        if best_minute_total == None or max(minutes) > best_minute_total:
+            best_guard = guard
+            best_minute_total = max(minutes)
+            best_minute = minutes.index(max(minutes))
+    return best_guard * best_minute
+
+
+def tally_events(events):
     guard_tally = {}
     current_guard = None
     last_asleep = None
@@ -42,24 +65,11 @@ with open("4.txt") as file:
             for i in range(last_asleep.minute, event.date.minute):
                 guard_tally[current_guard][i] += 1
             last_asleep = None
+    return guard_tally
 
-    best_guard = None
-    best_guard_total = None
-    best_minute = None
-    for (guard, minutes) in guard_tally.items():
-        if best_guard_total == None or sum(minutes) > best_guard_total:
-            best_guard = guard
-            best_guard_total = sum(minutes)
-            best_minute = minutes.index(max(minutes))
-    print(best_guard * best_minute)
 
-    best_guard = None
-    best_minute = None
-    best_minute_total = None
-    for (guard, minutes) in guard_tally.items():
-        if best_minute_total == None or max(minutes) > best_minute_total:
-            best_guard = guard
-            best_minute_total = max(minutes)
-            best_minute = minutes.index(max(minutes))
-    print(best_guard * best_minute)
-
+with open("4.txt") as file:
+    events = sorted([Event(line) for line in file], key=lambda e: e.date)
+    guard_tally = tally_events(events)
+    print(strategy_1(guard_tally))
+    print(strategy_2(guard_tally))
