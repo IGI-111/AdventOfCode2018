@@ -1,87 +1,52 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import re
-from functools import reduce
-import time
+
+def dist(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
-class Graph:
-    def __init__(self, file):
-        self.before = {}
-        self.after = {}
+with open("5.txt") as file:
+    points = []
+    for line in file:
+        [x, y] = map(lambda s: int(s.strip()), line.strip().split(","))
+        points.append((x, y))
 
-        for line in file:
-            m = re.search(
-                "Step (\w+) must be finished before step (\w+) can begin.", line
-            )
-            # a => b
-            a = m.group(1)
-            b = m.group(2)
+    dim_x = 1 + max(map(lambda x: x[0], points))
+    dim_y = 1 + max(map(lambda x: x[1], points))
 
-            if not a in self.before:
-                self.before[a] = set()
-            if not a in self.after:
-                self.after[a] = set()
-            if not b in self.before:
-                self.before[b] = set()
-            if not b in self.after:
-                self.after[b] = set()
+    field = [-1] * dim_x * dim_y
+    for y in range(0, dim_y):
+        for x in range(0, dim_x):
+            dists = dict()
+            for i in range(0, len(points)):
+                d = dist(points[i], (x, y))
+                if d in dists:
+                    dists[d] = -1
+                else:
+                    dists[d] = i
+            field[x + y * dim_x] = dists[min(dists)]
 
-            self.before[b].add(a)
-            self.after[a].add(b)
+    sizes = {p: 0 for p in range(-1, len(points))}
+    for val in field:
+        sizes[val] += 1
 
-    def entry_points(self):
-        return {p for p in self.before if len(self.before[p]) == 0}
+    # remove borders
+    for x in range(0, dim_x):
+        sizes[field[x]] = 0
+        sizes[field[x + dim_x * (dim_y - 1)]] = 0
+    for y in range(0, dim_y):
+        sizes[field[dim_x * y]] = 0
+        sizes[field[dim_x - 1 + dim_x * y]] = 0
+    sizes[-1] = 0
+    print(max(sizes.values()))
+
+    close_count = 0
+    for y in range(0, dim_y):
+        for x in range(0, dim_x):
+            total_dist = sum([dist(p, (x,y)) for p in points])
+            if total_dist < 10000:
+                close_count += 1
+    print(close_count)
 
 
-def time_value(quantum, val):
-    return 1 + quantum + ord(val) - ord("A")
-
-
-with open("6.txt") as file:
-    graph = Graph(file)
-    done = []
-    available = sorted(graph.entry_points())
-
-    while len(available) > 0:
-        execute = next(a for a in available if graph.before[a].issubset(done))
-        done.append(execute)
-        available.remove(execute)
-
-        available = sorted(graph.after[execute].difference(done).union(available))
-
-    print("".join(done))
-
-    quantum = 60
-    worker_count = 5
-
-    done = []
-    available = sorted(graph.entry_points())
-    current_task = [None] * worker_count
-    time_left = [0] * worker_count
-
-    chrono = 0
-    while len(available) > 0 or any(t != None for t in current_task):
-        for i in range(0, worker_count):
-            if time_left[i] == 0 and current_task[i] != None:
-                done.append(current_task[i])
-                available = sorted(
-                    graph.after[current_task[i]].difference(done).union(available)
-                )
-                current_task[i] = None
-
-            if current_task[i] == None:
-                try:
-                    current_task[i] = next(
-                        a for a in available if graph.before[a].issubset(done)
-                    )
-                    available.remove(current_task[i])
-                    time_left[i] = time_value(quantum, current_task[i])
-                except StopIteration:
-                    continue
-
-            time_left[i] -= 1
-        chrono += 1
-
-    print(chrono - 1)
