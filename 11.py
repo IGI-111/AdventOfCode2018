@@ -7,8 +7,12 @@ def compute_power(serial_number, x, y):
     return int(str(rack_id * (y * rack_id + serial_number))[-3]) - 5
 
 
-def max_subarray(array):
-    return (0, 0)
+def summed_area(sums, width, x, y, size):
+    a = sums[x - 1 + (y - 1) * width] if x > 0 else 0
+    b = sums[x + size - 1 + (y - 1) * width] if y > 0 else 0
+    c = sums[x - 1 + (y + size - 1) * width] if x > 0 else 0
+    d = sums[x + size - 1 + (y + size - 1) * width]
+    return d - b - c + a
 
 
 width = 300
@@ -21,27 +25,21 @@ for y in range(0, height):
     for x in range(0, width):
         matrix[x + y * width] = compute_power(serial_number, x + 1, y + 1)
 
-prefix_sums = [0] * width * height
-for x in range(0, width):
-    prefix_sums[x] = matrix[x]
-for y in range(1, height):
+sums = [0] * width * height
+for y in range(0, height):
     for x in range(0, width):
-        prefix_sums[x + y * width] = (
-            prefix_sums[x + (y - 1) * width] + matrix[x + y * width]
+        sums[x + y * width] = (
+            (sums[x - 1 + y * width] if x > 0 else 0)
+            + (sums[x + (y - 1) * width] if y > 0 else 0)
+            - (sums[x - 1 + (y - 1) * width] if x > 0 and y > 0 else 0)
+            + matrix[x + y * width]
         )
 
 best_square = None
 best_square_val = None
 for y in range(0, height - 2):
     for x in range(0, width - 2):
-        first_row = (
-            prefix_sums[x + (y - 1) * width : x + 3 + (y - 1) * width]
-            if y > 0
-            else [0] * 3
-        )
-        last_row = prefix_sums[x + (y + 2) * width : x + 3 + (y + 2) * width]
-
-        square_val = sum([last_row[i] - first_row[i] for i in range(0, 3)])
+        square_val = summed_area(sums, width, x, y, 3)
         if best_square_val == None or square_val > best_square_val:
             best_square = (x, y)
             best_square_val = square_val
@@ -49,20 +47,10 @@ print("{},{}".format(best_square[0] + 1, best_square[1] + 1))
 
 best_square = None
 best_square_val = None
-for y in range(0, height):
-    for yl in range(y + 1, height):
-        size = yl - y
+for size in range(1, 300):
+    for y in range(0, height - size + 1):
         for x in range(0, width - size + 1):
-            first_row = (
-                prefix_sums[x + (y - 1) * width : x + size + (y - 1) * width]
-                if y > 0
-                else [0] * size
-            )
-            last_row = prefix_sums[
-                x + (y + size - 1) * width : x + size + (y + size - 1) * width
-            ]
-            square_val = sum([last_row[i] - first_row[i] for i in range(0, size)])
-
+            square_val = summed_area(sums, width, x, y, size)
             if best_square_val == None or square_val > best_square_val:
                 best_square = (x, y, size)
                 best_square_val = square_val
