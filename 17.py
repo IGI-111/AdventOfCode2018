@@ -17,23 +17,22 @@ def parse_file(file):
                 coords.add((x, y))
     return coords
 
+
 class Field:
     def __init__(self, solid_coordinates):
         min_x = min(c[0] for c in solid_coordinates)
         max_x = max(c[0] for c in solid_coordinates)
         min_y = min(c[1] for c in solid_coordinates)
         max_y = max(c[1] for c in solid_coordinates)
-        print(solid_coordinates)
 
         self.width = max_x - min_x + 3
         self.height = max_y - min_y + 1
-        self.field = ['.'] * self.width * self.height
+        self.field = ["."] * self.width * self.height
 
         for c in solid_coordinates:
-            print(c,(c[0]-min_x+1), (c[1] - min_y) , (c[0]-min_x+1) + (c[1] - min_y-1) * self.width)
-            self.field[(c[0]-min_x+1) + (c[1] - min_y) * self.width] = '#'
+            self.field[(c[0] - min_x + 1) + (c[1] - min_y) * self.width] = "#"
 
-        self.source = 500 - min_x+1
+        self.source = 500 - min_x + 1
 
     def __repr__(self):
         res = ""
@@ -44,36 +43,63 @@ class Field:
             res += "\n"
         return res
 
-    def drop(self):
-        current = self.source
-        blocked_right = False
-        blocked_left = False
-        while not (blocked_left and blocked_right):
-            self.field[current] = '|'
+    def drop(self, origin):
+        drops = [origin]
 
-            if current + self.width >= len(self.field):
-                return
+        while len(drops) > 0:
+            drop = drops.pop()
 
-            if self.field[current + self.width] in "|.":
-                current += self.width
-                blocked_right = False
-                blocked_left = False
-            elif not blocked_left and self.field[current -1] in "|.":
-                current -= 1
-            elif not blocked_right and self.field[current +1] in "|.":
-                current += 1
+            # drop down
+            while (
+                drop + self.width < len(self.field)
+                and self.field[drop + self.width] in "|."
+            ):
+                self.field[drop] = "|"
+                drop += self.width
 
-            if self.field[current -1] not in "|.":
-                blocked_left = True
-            if self.field[current +1] not in "|.":
-                blocked_right = True
-        self.field[current] = '~'
+            # outside
+            if drop + self.width >= len(self.field):
+                self.field[drop] = "|"
+                continue
 
+            filling = True
+            while filling:
+                right = drop
+                while (
+                    self.field[right + 1] in "|."
+                    and self.field[right + 1 + self.width] not in "|."
+                ):
+                    right += 1
+                right_open = self.field[right + 1] in "|."
+
+                left = drop
+                while (
+                    self.field[left - 1] in "|."
+                    and self.field[left - 1 + self.width] not in "|."
+                ):
+                    left -= 1
+                left_open = self.field[left - 1] in "|."
+
+                if not (right_open or left_open):
+                    for i in range(left, right + 1):
+                        self.field[i] = "~"
+                    drop -= self.width
+                else:
+                    filling = False
+                    for i in range(left, right + 1):
+                        self.field[i] = "|"
+                    if right_open:
+                        drops.append(right + 1)
+                    if left_open:
+                        drops.append(left - 1)
+
+    def wet_count(self):
+        return len([x for x in self.field if x in "|~"])
+
+    def still_count(self):
+        return len([x for x in self.field if x in "~"])
 
 field = Field(parse_file(open("17.txt")))
-print(field)
-while True:
-    input()
-    field.drop()
-    print(field)
-
+field.drop(field.source)
+print(field.wet_count())
+print(field.still_count())
