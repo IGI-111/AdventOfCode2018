@@ -11,9 +11,9 @@ def run_ins(ins, regs):
     elif opcode == "addi":
         regs[c] = regs[a] + b
     elif opcode == "mulr":
-        regs[c] = regs[a] * b
-    elif opcode == "muli":
         regs[c] = regs[a] * regs[b]
+    elif opcode == "muli":
+        regs[c] = regs[a] * b
     elif opcode == "banr":
         regs[c] = regs[a] & regs[b]
     elif opcode == "bani":
@@ -114,6 +114,8 @@ for (before, ins, after) in tests:
         opcodes[opcode] = possible_opcodes(before, ins, after)
 for opcode in opcodes:
     opcodes[opcode] = next(iter(opcodes[opcode]))
+
+print(opcodes)
 
 regs = [0] * 4
 program = parse_program(open("16.txt"))
